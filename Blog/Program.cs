@@ -1,5 +1,6 @@
 using Blog.Data;
 using Blog.Models;
+using Blog.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace Blog;
@@ -17,6 +18,7 @@ public class Program
         builder.Services.AddDbContext<BlogDbContext>(options =>
             options.UseSqlite(builder.Configuration.GetConnectionString("BlogDb")));
 
+        builder.Services.AddScoped<PostService>();
 
         var app = builder.Build();
         InitializeDatabase(app);
