@@ -20,6 +20,8 @@ public class Program
 
         builder.Services.AddScoped<PostService>();
         builder.Services.AddScoped<UserService>();
+        builder.Services.AddScoped<CommentService>();
+        builder.Services.AddScoped<TagService>();
 
 
         var app = builder.Build();
