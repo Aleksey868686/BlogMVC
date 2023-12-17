@@ -19,6 +19,8 @@ public class Program
             options.UseSqlite(builder.Configuration.GetConnectionString("BlogDb")));
 
         builder.Services.AddScoped<PostService>();
+        builder.Services.AddScoped<UserService>();
+
 
         var app = builder.Build();
         InitializeDatabase(app);
