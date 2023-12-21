@@ -61,9 +61,9 @@ public class Program
             // Check if there's already data in the database to prevent duplicate entries.
             if (!db.Users.Any())
             {
-                user1 = new User { FirstName = "Alice", LastName = "Johnson", Email = "alice@example.com", Password = "password", JoinDate = DateTime.UtcNow };
-                user2 = new User { FirstName = "Bob", LastName = "Smith", Email = "bob@example.com", Password = "password", JoinDate = DateTime.UtcNow };
-                user3 = new User { FirstName = "Bruce", LastName = "Wayne", Email = "bruce@example.com", Password = "password", JoinDate = DateTime.UtcNow };
+                user1 = new User { FirstName = "Alice", LastName = "Johnson", Email = "alice@example.com", JoinDate = DateTime.UtcNow };
+                user2 = new User { FirstName = "Bob", LastName = "Smith", Email = "bob@example.com", JoinDate = DateTime.UtcNow };
+                user3 = new User { FirstName = "Bruce", LastName = "Wayne", Email = "bruce@example.com", JoinDate = DateTime.UtcNow };
 
                 db.Users.AddRange(user1, user2, user3);
                 db.SaveChanges();
