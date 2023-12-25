@@ -1,7 +1,12 @@
 using Blog.Data;
 using Blog.Models;
 using Blog.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+
+
 
 namespace Blog;
 
@@ -23,6 +28,25 @@ public class Program
         builder.Services.AddScoped<CommentService>();
         builder.Services.AddScoped<TagService>();
 
+        builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+           .AddCookie(options =>
+           {
+               options.LoginPath = "/Authentication/Login";
+               options.LogoutPath = "/Authentication/Logout";
+           });
+
+        builder.Services.AddAuthorization(options =>
+        {
+            options.AddPolicy("Administrator", policy =>
+                policy.RequireClaim(ClaimTypes.Role, "Administrator"));
+
+            options.AddPolicy("Moderator", policy =>
+                policy.RequireAssertion(x => x.User.HasClaim(ClaimTypes.Role, "Moderator") || x.User.HasClaim(ClaimTypes.Role, "Administrator")));
+
+            options.AddPolicy("User", policy =>
+                policy.RequireAssertion(x => x.User.HasClaim(ClaimTypes.Role, "User") || x.User.HasClaim(ClaimTypes.Role, "Administrator")));
+
+        });
 
         var app = builder.Build();
         InitializeDatabase(app);
@@ -44,7 +68,7 @@ public class Program
 
         app.MapControllerRoute(
             name: "default",
-            pattern: "{controller=Home}/{action=Index}/{id?}");
+            pattern: "{controller=Home}/{action=Index}/{id?}");        
 
         app.Run();
     }
@@ -58,6 +82,15 @@ public class Program
             Post post1 = null, post2 = null;
             Tag tag1 = null, tag2 = null, tag3 = null;
 
+            if (!db.Roles.Any())
+            {
+                db.Roles.AddRange(
+                    new Role { Name = "Administrator" },
+                    new Role { Name = "Moderator" },
+                    new Role { Name = "User" }
+                );
+                db.SaveChanges();
+            }
             // Check if there's already data in the database to prevent duplicate entries.
             if (!db.Users.Any())
             {
@@ -135,6 +168,36 @@ public class Program
                     db.PostTags.AddRange(postTag1, postTag2);
                 }
             }
+
+            if (!db.UserRoles.Any())
+            {
+                // Fetch the roles
+                var adminRole = db.Roles.FirstOrDefault(r => r.Name == "Administrator");
+                var modRole = db.Roles.FirstOrDefault(r => r.Name == "Moderator");
+                var userRole = db.Roles.FirstOrDefault(r => r.Name == "User");
+
+                // Fetch the users
+                user1 = db.Users.FirstOrDefault(u => u.FirstName == "Alice");
+                user2 = db.Users.FirstOrDefault(u => u.FirstName == "Bob");
+                user3 = db.Users.FirstOrDefault(u => u.FirstName == "Bruce");
+
+                // Assign roles to users
+                if (adminRole != null && user1 != null)
+                {
+                    db.UserRoles.Add(new UserRole { UserId = user1.Id, RoleId = adminRole.Id });
+                }
+                if (modRole != null && user2 != null)
+                {
+                    db.UserRoles.Add(new UserRole { UserId = user2.Id, RoleId = modRole.Id });
+                }
+                if (userRole != null && user3 != null)
+                {
+                    db.UserRoles.Add(new UserRole { UserId = user3.Id, RoleId = userRole.Id });
+                }
+
+                db.SaveChanges();
+            }
+
             db.SaveChanges();        
         }
     }

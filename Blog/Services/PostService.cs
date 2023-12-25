@@ -42,4 +42,10 @@ public class PostService
             await _context.SaveChangesAsync();
         }
     }
+
+    public async Task<bool> IsUserPostOwnerAsync(Guid userId, Guid postId)
+    {
+        var post = await _context.Posts.FindAsync(postId);
+        return post != null && post.UserId == userId;
+    }
 }

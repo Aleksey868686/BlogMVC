@@ -1,5 +1,6 @@
 ﻿using Blog.Models;
 using Blog.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Blog.Controllers;
@@ -13,12 +14,15 @@ public class UserController : Controller
         _userService = userService;
     }
 
+    [HttpGet]
     public async Task<IActionResult> Index()
     {
         var users = await _userService.GetAllUsersAsync();
         return View(users);
     }
 
+    [HttpGet]
+    [Authorize(Policy = "Administrator")]
     public async Task<IActionResult> Details(Guid id)
     {
         var user = await _userService.GetUserByIdAsync(id);
@@ -29,6 +33,7 @@ public class UserController : Controller
         return View(user);
     }
 
+    [HttpGet]
     public IActionResult Register()
     {
         return View();
@@ -46,6 +51,8 @@ public class UserController : Controller
         return View(user);
     }
 
+    [HttpGet]
+    [Authorize(Policy = "User")]
     public async Task<IActionResult> Edit(Guid id)
     {
         var user = await _userService.GetUserByIdAsync(id);
@@ -57,6 +64,7 @@ public class UserController : Controller
     }
 
     [HttpPost]
+    [Authorize(Policy = "User")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(Guid id, User user)
     {
@@ -73,6 +81,8 @@ public class UserController : Controller
         return View(user);
     }
 
+    [HttpGet]
+    [Authorize(Policy = "User")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var user = await _userService.GetUserByIdAsync(id);
@@ -84,6 +94,7 @@ public class UserController : Controller
     }
 
     [HttpPost, ActionName("Delete")]
+    [Authorize(Policy = "User")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(Guid id)
     {

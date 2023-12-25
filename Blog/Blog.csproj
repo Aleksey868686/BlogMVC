@@ -16,7 +16,6 @@
 
   <ItemGroup>
     <Folder Include="Configs\" />
-    <Folder Include="Extensions\" />
     <Folder Include="Data\Migrations\" />
     <Folder Include="ViewModels\" />
   </ItemGroup>

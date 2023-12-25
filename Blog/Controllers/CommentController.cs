@@ -1,5 +1,7 @@
-﻿using Blog.Models;
+﻿using Blog.Extensions;
+using Blog.Models;
 using Blog.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Blog.Controllers;
@@ -13,18 +15,23 @@ public class CommentController : Controller
         _commentService = commentService;
     }
 
+    [HttpGet]
+    [Authorize(Policy = "User")]
     public async Task<IActionResult> Index()
     {
         var comments = await _commentService.GetAllCommentsAsync();
         return View(comments);
     }
 
+    [HttpGet]
+    [Authorize(Policy = "User")]
     public IActionResult Create()
     {
         return View();
     }
 
     [HttpPost]
+    [Authorize(Policy = "User")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(Comment comment)
     {
@@ -36,6 +43,7 @@ public class CommentController : Controller
         return View(comment);
     }
 
+    [HttpGet]
     public async Task<IActionResult> Edit(Guid id)
     {
         var comment = await _commentService.GetCommentByIdAsync(id);
@@ -43,6 +51,13 @@ public class CommentController : Controller
         {
             return NotFound();
         }
+
+        var currentUserId = User.GetUserId(); // Extension method to get user ID from claims
+        if (!await _commentService.IsUserCommentOwnerAsync(currentUserId, id) && !User.IsInRole("Administrator") && !User.IsInRole("Moderator"))
+        {
+            return Forbid();
+        }
+
         return View(comment);
     }
 
@@ -50,6 +65,12 @@ public class CommentController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(Guid id, Comment comment)
     {
+        var currentUserId = User.GetUserId(); // Extension method to get user ID from claims
+        if (!await _commentService.IsUserCommentOwnerAsync(currentUserId, id) && !User.IsInRole("Administrator") && !User.IsInRole("Moderator"))
+        {
+            return Forbid();
+        }
+
         if (id != comment.Id)
         {
             return BadRequest();
@@ -63,6 +84,8 @@ public class CommentController : Controller
         return View(comment);
     }
 
+    [HttpGet]
+    [Authorize(Policy = "User")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var comment = await _commentService.GetCommentByIdAsync(id);
@@ -74,6 +97,7 @@ public class CommentController : Controller
     }
 
     [HttpPost, ActionName("Delete")]
+    [Authorize(Policy = "User")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(Guid id)
     {

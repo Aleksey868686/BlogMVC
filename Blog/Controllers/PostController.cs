@@ -1,5 +1,7 @@
-﻿using Blog.Models;
+﻿using Blog.Extensions;
+using Blog.Models;
 using Blog.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Blog.Controllers;
@@ -13,6 +15,7 @@ public class PostController : Controller
         _postService = postService;
     }
 
+    [HttpGet]
     public async Task<IActionResult> Index()
     {
         var posts = await _postService.GetAllPostsAsync();
@@ -31,12 +34,15 @@ public class PostController : Controller
         return View(posts);
     }
 
+    [HttpGet]
+    [Authorize(Policy = "User")]
     public IActionResult Create()
     {
         return View();
     }
 
     [HttpPost]
+    [Authorize(Policy = "User")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(Post post)
     {
@@ -48,6 +54,7 @@ public class PostController : Controller
         return View(post);
     }
 
+    [HttpGet]
     public async Task<IActionResult> Edit(Guid id)
     {
         var post = await _postService.GetPostByIdAsync(id);
@@ -55,6 +62,13 @@ public class PostController : Controller
         {
             return NotFound();
         }
+
+        var currentUserId = User.GetUserId(); // Extension method to get user ID from claims
+        if (!await _postService.IsUserPostOwnerAsync(currentUserId, id) && !User.IsInRole("Administrator") && !User.IsInRole("Moderator"))
+        {
+            return Forbid();
+        }
+  
         return View(post);
     }
 
@@ -62,6 +76,12 @@ public class PostController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(Guid id, Post post)
     {
+        var currentUserId = User.GetUserId();
+        if (!await _postService.IsUserPostOwnerAsync(currentUserId, id) && !User.IsInRole("Administrator") && !User.IsInRole("Moderator"))
+        {
+            return Forbid();
+        }
+
         if (id != post.Id)
         {
             return BadRequest();
@@ -72,9 +92,11 @@ public class PostController : Controller
             await _postService.UpdatePostAsync(post);
             return RedirectToAction(nameof(Index));
         }
+
         return View(post);
     }
 
+    [HttpGet]
     public async Task<IActionResult> Delete(Guid id)
     {
         var post = await _postService.GetPostByIdAsync(id);
@@ -86,6 +108,7 @@ public class PostController : Controller
     }
 
     [HttpPost, ActionName("Delete")]
+    [Authorize(Policy = "User")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(Guid id)
     {

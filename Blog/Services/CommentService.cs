@@ -35,4 +35,10 @@ public class CommentService
             await _context.SaveChangesAsync();
         }
     }
+
+    public async Task<bool> IsUserCommentOwnerAsync(Guid userId, Guid commentId)
+    {
+        var comment = await _context.Comments.FindAsync(commentId);
+        return comment != null && comment.UserId == userId;
+    }
 }

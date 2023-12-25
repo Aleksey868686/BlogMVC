@@ -1,5 +1,4 @@
-﻿using Blog.Configs;
-using Blog.Data;
+﻿using Blog.Data;
 using Blog.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -21,8 +20,24 @@ public class UserService
 
     public async Task AddUserAsync(User user)
     {
-        // Assign default role (e.g., "User") to the new user
-        // Consider hashing the password here if storing passwords
+        // Check if the "User" role exists, and if not, add it
+        var userRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "User");
+        if (userRole == null)
+        {
+            userRole = new Role { Name = "User" };
+            _context.Roles.Add(userRole);
+            await _context.SaveChangesAsync();
+        }
+
+        // Assign the "User" role to the new user
+        if (user.UserRoles == null)
+        {
+            user.UserRoles = new List<Role>();
+        }
+        user.UserRoles.Add(userRole);
+
+        // Hash the user's password
+        user.UserCredential.Password = HashPassword(user.UserCredential.Password);
 
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
@@ -43,4 +58,37 @@ public class UserService
             await _context.SaveChangesAsync();
         }
     }
+
+    public async Task<User> AuthenticateUserAsync(string login, string password)
+    {
+        var user = await _context.Users
+            .Include(u => u.UserCredential)
+            .Include(u => u.UserRoles)
+            .FirstOrDefaultAsync(u => u.UserCredential.Login == login);
+
+        if (user != null)
+        {
+            var verificationResult = VerifyHashedPassword(user.UserCredential.Password, password);
+            if (verificationResult == PasswordVerificationResult.Success)
+            {
+                return user;
+            }
+        }
+
+        return null;
+    }
+
+    private string HashPassword(string password)
+    {
+        var passwordHasher = new PasswordHasher<User>();
+        return passwordHasher.HashPassword(null, password);
+    }
+
+    private PasswordVerificationResult VerifyHashedPassword(string hashedPassword, string providedPassword)
+    {
+        var passwordHasher = new PasswordHasher<User>();
+        return passwordHasher.VerifyHashedPassword(null, hashedPassword, providedPassword);
+    }
 }
+
+
